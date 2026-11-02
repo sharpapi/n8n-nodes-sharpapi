@@ -1,0 +1,86 @@
+{
+  "name": "n8n-nodes-sharpapi",
+  "version": "0.1.0",
+  "description": "n8n community nodes for SharpAPI: parse resumes and invoices into structured JSON and score resumes against job descriptions with AI",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "sharpapi",
+    "invoice-parser",
+    "invoice-ocr",
+    "invoice-data-extraction",
+    "invoice-automation",
+    "accounts-payable",
+    "receipt-ocr",
+    "document-ai",
+    "e-invoice",
+    "bookkeeping-automation",
+    "ocr",
+    "resume-matching",
+    "candidate-scoring",
+    "cv-screening",
+    "resume-job-match",
+    "candidate-ranking",
+    "recruitment-automation",
+    "hr-automation",
+    "ats",
+    "talent-acquisition",
+    "ai-screening",
+    "resume-parser",
+    "cv-parser",
+    "resume-parsing",
+    "cv-parsing",
+    "resume-to-json",
+    "applicant-tracking"
+  ],
+  "license": "MIT",
+  "homepage": "https://sharpapi.com",
+  "author": {
+    "name": "A2Z WEB LTD",
+    "email": "contact@sharpapi.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sharpapi/n8n-nodes-sharpapi.git"
+  },
+  "engines": {
+    "node": ">=22.22"
+  },
+  "main": "index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "setup": "npm install --ignore-scripts",
+    "build": "n8n-node build && node copy-codex.mjs",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/SharpApiApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/SharpApiInvoiceParser/SharpApiInvoiceParser.node.js",
+      "dist/nodes/SharpApiResumeJobMatchScore/SharpApiResumeJobMatchScore.node.js",
+      "dist/nodes/SharpApiResumeParser/SharpApiResumeParser.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "^0.41.2",
+    "@types/node": "^22.20.1",
+    "n8n-workflow": "^2.16.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

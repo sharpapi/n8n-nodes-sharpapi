@@ -1,0 +1,30 @@
+{
+	"node": "n8n-nodes-sharpapi.sharpApiResumeParser",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Productivity"
+	],
+	"alias": [
+		"CV",
+		"Curriculum Vitae",
+		"Resume",
+		"Recruitment",
+		"ATS",
+		"HR",
+		"Candidate",
+		"SharpAPI"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		]
+	}
+}

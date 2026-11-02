@@ -1,0 +1,75 @@
+{
+  "name": "SharpAPI Resume Job Match Score example",
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "When clicking 'Execute workflow'",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "read-file",
+      "name": "Read file from disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "fileSelector": "/path/to/resume.pdf",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      }
+    },
+    {
+      "id": "sharpapi",
+      "name": "Resume Job Match Score",
+      "type": "n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "binaryPropertyName": "data",
+        "content": "Senior Backend Engineer. Remote. TypeScript and Node.js on AWS with PostgreSQL and Kafka. You will own the payments pipeline end to end. Seven or more years of backend experience required. Terraform a plus.",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Read file from disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read file from disk": {
+      "main": [
+        [
+          {
+            "node": "Resume Job Match Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -1,0 +1,32 @@
+{
+	"node": "n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Productivity"
+	],
+	"alias": [
+		"CV",
+		"Curriculum Vitae",
+		"Resume",
+		"Screening",
+		"Recruitment",
+		"ATS",
+		"HR",
+		"Candidate",
+		"Scoring",
+		"SharpAPI"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		]
+	}
+}

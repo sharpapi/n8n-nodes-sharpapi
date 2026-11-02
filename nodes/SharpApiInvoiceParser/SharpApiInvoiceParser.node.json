@@ -1,0 +1,31 @@
+{
+	"node": "n8n-nodes-sharpapi.sharpApiInvoiceParser",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": [
+		"Finance & Accounting"
+	],
+	"alias": [
+		"Invoice",
+		"OCR",
+		"Receipt",
+		"Bill",
+		"Accounts Payable",
+		"Bookkeeping",
+		"Accounting",
+		"Document",
+		"SharpAPI"
+	],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://sharpapi.com/documentation"
+			}
+		]
+	}
+}
