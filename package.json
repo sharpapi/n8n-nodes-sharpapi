@@ -50,6 +50,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "setup": "npm install --ignore-scripts",
     "build": "n8n-node build && node copy-codex.mjs",
