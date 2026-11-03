@@ -31,7 +31,7 @@
     {
       "id": "sharpapi",
       "name": "Invoice Parser",
-      "type": "n8n-nodes-sharpapi.sharpApiInvoiceParser",
+      "type": "@sharpapi/n8n-nodes-sharpapi.sharpApiInvoiceParser",
       "typeVersion": 1,
       "position": [
         440,

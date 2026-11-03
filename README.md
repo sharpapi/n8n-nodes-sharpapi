@@ -1,4 +1,4 @@
-# n8n-nodes-sharpapi
+# @sharpapi/n8n-nodes-sharpapi
 
 **SharpAPI for n8n.** Turn resumes and invoices into clean, structured JSON, and score candidates against a job, inside your n8n workflow.
 
@@ -12,14 +12,14 @@ Powered by [SharpAPI](https://sharpapi.com). Each node is a single, focused step
 
 ## Installation
 
-Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation-and-management/) and use the package name `n8n-nodes-sharpapi`.
+Follow the [community nodes installation guide](https://docs.n8n.io/integrations/community-nodes/installation-and-management/) and use the package name `@sharpapi/n8n-nodes-sharpapi`.
 
 Self-hosted, from the CLI:
 
 ```bash
 mkdir -p ~/.n8n/nodes
 cd ~/.n8n/nodes
-npm install n8n-nodes-sharpapi
+npm install @sharpapi/n8n-nodes-sharpapi
 ```
 
 Then restart n8n.

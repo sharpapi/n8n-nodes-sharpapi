@@ -185,7 +185,7 @@ describe.each(nodeClasses)('%s', (nodeClass) => {
 	it('ships a codex file naming the node it documents', () => {
 		const codex = codexOf(nodeClass);
 
-		expect(codex.node).toMatch(/^n8n-nodes-sharpapi\./);
+		expect(codex.node.startsWith(`${manifest.name}.`)).toBe(true);
 		expect(source).toContain(`name: '${codex.node.split('.')[1]}'`);
 		expect(codex.codexVersion).toBeDefined();
 		expect(codex.resources.primaryDocumentation[0].url).toMatch(/^https:\/\//);

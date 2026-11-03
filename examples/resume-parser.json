@@ -31,7 +31,7 @@
     {
       "id": "sharpapi",
       "name": "Resume Parser",
-      "type": "n8n-nodes-sharpapi.sharpApiResumeParser",
+      "type": "@sharpapi/n8n-nodes-sharpapi.sharpApiResumeParser",
       "typeVersion": 1,
       "position": [
         440,

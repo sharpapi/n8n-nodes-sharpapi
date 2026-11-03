@@ -1,5 +1,5 @@
 {
-  "name": "n8n-nodes-sharpapi",
+  "name": "@sharpapi/n8n-nodes-sharpapi",
   "version": "1.0.1",
   "description": "n8n community nodes for SharpAPI: parse resumes and invoices into structured JSON and score resumes against job descriptions with AI",
   "keywords": [

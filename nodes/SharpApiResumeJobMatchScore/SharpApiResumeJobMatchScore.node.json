@@ -1,5 +1,5 @@
 {
-	"node": "n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
+	"node": "@sharpapi/n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [

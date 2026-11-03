@@ -31,7 +31,7 @@
     {
       "id": "sharpapi",
       "name": "Resume Job Match Score",
-      "type": "n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
+      "type": "@sharpapi/n8n-nodes-sharpapi.sharpApiResumeJobMatchScore",
       "typeVersion": 1,
       "position": [
         440,
