@@ -2,6 +2,7 @@ import type {
 	IExecuteFunctions,
 	IDataObject,
 	IHttpRequestMethods,
+	INodeProperties,
 	JsonObject,
 	GenericValue,
 } from 'n8n-workflow';
@@ -44,7 +45,124 @@ export async function sharpApiRequest(
 }
 
 /**
- * Uploads a file as multipart/form-data and returns the URL to poll.
+ * Where the node takes its file from. Shared by every node.
+ *
+ * File URL exists for AI Agent tool use: n8n starts a tool node with only the
+ * arguments the model chose, never the binary data of the conversation, so a
+ * tool can only reach a file the model can name.
+ */
+export const FILE_INPUT_PROPERTIES: INodeProperties[] = [
+	{
+		displayName: 'Input Type',
+		name: 'inputType',
+		type: 'options',
+		options: [
+			{
+				name: 'Binary File',
+				value: 'binary',
+				description: 'A file from a previous node, such as Read Files From Disk or a form upload',
+			},
+			{
+				name: 'File URL',
+				value: 'url',
+				description: 'A publicly reachable URL the node downloads the file from. Use this when the node runs as an AI Agent tool.',
+			},
+		],
+		default: 'binary',
+	},
+	{
+		displayName: 'Input Binary Field',
+		name: 'binaryPropertyName',
+		type: 'string',
+		default: 'data',
+		required: true,
+		displayOptions: { show: { inputType: ['binary'] } },
+		description: 'Name of the field in the input item that contains the file to send to SharpAPI',
+	},
+	{
+		displayName: 'File URL',
+		name: 'fileUrl',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. https://example.com/document.pdf',
+		displayOptions: { show: { inputType: ['url'] } },
+		description: 'HTTP or HTTPS URL of the file to send to SharpAPI',
+	},
+];
+
+interface InputFile {
+	buffer: Buffer;
+	mimeType: string;
+	fileName: string;
+}
+
+/** Last path segment of a URL, if it looks like a file name. */
+function fileNameFromUrl(url: URL): string {
+	const last = decodeURIComponent(url.pathname.split('/').pop() ?? '');
+	return last.includes('.') ? last : 'upload';
+}
+
+/**
+ * Reads the file the node was pointed at, from binary data or a URL.
+ *
+ * The download uses the plain httpRequest helper, never the authenticated one,
+ * so the SharpAPI key is not sent to whatever host the URL names.
+ */
+async function getInputFile(this: IExecuteFunctions, itemIndex: number): Promise<InputFile> {
+	const inputType = this.getNodeParameter('inputType', itemIndex, 'binary') as string;
+
+	if (inputType !== 'url') {
+		const binaryPropertyName = this.getNodeParameter('binaryPropertyName', itemIndex) as string;
+		const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
+		return {
+			buffer: await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName),
+			mimeType: binaryData.mimeType || 'application/octet-stream',
+			fileName: binaryData.fileName ?? 'upload',
+		};
+	}
+
+	const raw = (this.getNodeParameter('fileUrl', itemIndex) as string).trim();
+	let url: URL | undefined;
+	try {
+		url = new URL(raw);
+	} catch {
+		// handled below
+	}
+
+	if (!url || (url.protocol !== 'http:' && url.protocol !== 'https:')) {
+		throw new NodeOperationError(this.getNode(), `"${raw}" is not an HTTP or HTTPS URL`, {
+			itemIndex,
+			description: 'Set "File URL" to a full address starting with http:// or https://.',
+		});
+	}
+
+	let response;
+	try {
+		response = await this.helpers.httpRequest({
+			method: 'GET',
+			url: url.href,
+			encoding: 'arraybuffer',
+			returnFullResponse: true,
+		});
+	} catch (error) {
+		throw new NodeOperationError(this.getNode(), `Could not download the file at ${url.href}`, {
+			itemIndex,
+			description: `${(error as Error).message}. Check that the URL is publicly reachable from this n8n instance.`,
+		});
+	}
+
+	const contentType = String((response.headers as IDataObject)?.['content-type'] ?? '');
+	return {
+		buffer: Buffer.from(response.body as ArrayBuffer),
+		mimeType: contentType.split(';')[0].trim() || 'application/octet-stream',
+		fileName: fileNameFromUrl(url),
+	};
+}
+
+/**
+ * Uploads the node's input file as multipart/form-data and returns the URL to
+ * poll.
  *
  * n8n sets the multipart boundary itself when the body is a FormData instance,
  * so the Content-Type header must not be set manually.
@@ -56,20 +174,13 @@ export async function sharpApiUpload(
 	this: IExecuteFunctions,
 	endpoint: string,
 	itemIndex: number,
-	binaryPropertyName: string,
 	fields: IDataObject,
 ): Promise<string> {
 	const baseUrl = await getBaseUrl.call(this);
-
-	const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
-	const buffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
+	const file = await getInputFile.call(this, itemIndex);
 
 	const form = new FormData();
-	form.append(
-		'file',
-		new Blob([new Uint8Array(buffer)], { type: binaryData.mimeType || 'application/octet-stream' }),
-		binaryData.fileName ?? 'upload',
-	);
+	form.append('file', new Blob([new Uint8Array(file.buffer)], { type: file.mimeType }), file.fileName);
 
 	for (const [key, value] of Object.entries(fields)) {
 		if (value !== undefined && value !== null && value !== '') {

@@ -7,7 +7,12 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-import { sharpApiPoll, sharpApiUpload, toNodeError } from '../shared/GenericFunctions';
+import {
+	FILE_INPUT_PROPERTIES,
+	sharpApiPoll,
+	sharpApiUpload,
+	toNodeError,
+} from '../shared/GenericFunctions';
 import { LANGUAGE_OPTIONS } from '../shared/Languages';
 
 const ENDPOINT = '/hr/resume_job_match_score';
@@ -19,7 +24,7 @@ export class SharpApiResumeJobMatchScore implements INodeType {
 		icon: { light: 'file:resume-job-match-score.svg', dark: 'file:resume-job-match-score.dark.svg' },
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{$parameter["binaryPropertyName"]}}',
+		subtitle: '={{$parameter["inputType"] === "url" ? "From URL" : "From binary field"}}',
 		description: 'Score a resume against a job description across 20 dimensions with AI, powered by SharpAPI',
 		usableAsTool: true,
 		defaults: {
@@ -34,14 +39,7 @@ export class SharpApiResumeJobMatchScore implements INodeType {
 			},
 		],
 		properties: [
-				{
-					displayName: 'Input Data Field Name',
-					name: 'binaryPropertyName',
-					type: 'string',
-					default: 'data',
-					required: true,
-					description: 'Name of the field in the input item that contains the file to send to SharpAPI'
-				},
+				...FILE_INPUT_PROPERTIES,
 				{
 					displayName: 'Job Description',
 					name: 'content',
@@ -116,7 +114,6 @@ export class SharpApiResumeJobMatchScore implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
 				const options = this.getNodeParameter('options', i, {}) as IDataObject;
 				const simplify = options.simplify !== false;
 				const pollInterval = (options.pollInterval as number) ?? 5;
@@ -147,7 +144,6 @@ export class SharpApiResumeJobMatchScore implements INodeType {
 					this,
 					ENDPOINT,
 					i,
-					binaryPropertyName,
 					fields,
 				);
 

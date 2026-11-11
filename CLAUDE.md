@@ -7,17 +7,19 @@ endpoint, one shared credential, `sharpApiApi` ("SharpAPI API"). The repo root
 
 ---
 
-## Where things stand — 2026-11-02
+## Where things stand — 2026-11-11
 
 Published once as the unscoped `n8n-nodes-sharpapi@1.0.1` (2026-11-02, with
 provenance, maintainer `makowskid`), then renamed to
-`@sharpapi/n8n-nodes-sharpapi`, which is not on npm yet. The repo is
+`@sharpapi/n8n-nodes-sharpapi`, published as 1.0.2 and 1.0.3 (`latest`). The
+working tree adds the File URL input type for AI Agent tool use, unreleased.
+The repo is
 `github.com/sharpapi/n8n-nodes-sharpapi` (public); CI is green on Ubuntu.
 
 | Gate | State |
 | --- | --- |
 | `npm run typecheck` | pass |
-| `npm test` | 78 passing, ~2s, no network |
+| `npm test` | 81 passing, ~2s, no network |
 | `npm run lint` | **0 errors, 0 warnings** |
 | `npm run build` | pass |
 | `npm pack --dry-run` | 22 files, ~41 kB unpacked |
@@ -32,9 +34,12 @@ offered as AI Agent tools. Repeat once against this package.
 
 ### Next
 
-1. Publish `@sharpapi/n8n-nodes-sharpapi` with the `NPM_TOKEN` secret, then move
-   to a trusted publisher; see *Releasing*.
-2. Retire the unscoped `n8n-nodes-sharpapi`: deprecate it pointing at the
+1. Release 1.0.4 (File URL input), then record the n8n verification video
+   against exactly that version: install from npm, credential test, the main
+   actions, and one node used as an AI Agent tool with a File URL.
+2. If not done yet: move to a trusted publisher and delete the `NPM_TOKEN`
+   secret; see *Releasing*.
+3. Retire the unscoped `n8n-nodes-sharpapi`: deprecate it pointing at the
    scoped name, or unpublish it, which npm allows only within 72 hours of
    creation (until 2026-11-05 14:50 UTC) and which frees the name for anyone.
 
@@ -48,9 +53,6 @@ Not hard requirements, but likely review comments.
 - Error messages should say what happened and how to fix it, without "fail"
   and friends: `The SharpAPI job failed`, and the `did not say where to collect
   the result` description, which is a raw JSON dump.
-- First-party nodes label the file input "Input Binary Field", not "Input Data
-  Field Name". Placeholders should start with "e.g.". The Job Match Score
-  subtitle shows the binary field name, which says nothing.
 
 ### Known, not blocking
 
@@ -215,6 +217,16 @@ A node loaded from a custom extensions directory registers as
 `CUSTOM.<nodeName>` instead, so an example built in a local n8n needs its type
 rewritten before it is committed. The Read file step points at a placeholder
 path, `/path/to/<document>.pdf`.
+
+**AI Agent tools never see binary data.** n8n starts a tool node with an item
+holding only the arguments the model chose (`{json: {}}` when it chose none),
+not the trigger's item, so `assertBinaryData` fails even when the chat upload
+sits right there on the Chat Trigger as `data0`. Verified on n8n 2.45 with Agent
+3.1. That is why every node has the File URL input type, which is how a tool
+gets its file. The download uses `httpRequest`, never the authenticated
+helper, so the SharpAPI key is not sent to the file's host; a test pins that.
+`examples/sample-invoice.pdf` is a fictional invoice, served from GitHub raw
+for tool demos. Nothing but workflow JSON in `examples/` counts as an example.
 
 **Do not poll the `status_url` the API advertises.** It is the 5-segment generic
 URL, and segment count is what decides whether `result` comes back decoded — at

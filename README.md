@@ -34,9 +34,12 @@ All nodes share one credential, so the key is entered once.
 
 ## Usage
 
-Connect any node that produces a file (Gmail, Google Drive, HTTP Request, Read/Write Files from Disk, Webhook) and point **Input Data Field Name** at the field holding it, usually `data`.
+Every node takes its file in one of two ways, chosen with **Input Type**:
 
-Every node also sets `usableAsTool`, so an AI Agent node can call it directly to process a document mid-conversation.
+- **Binary File** (default): connect any node that produces a file (Gmail, Google Drive, HTTP Request, Read/Write Files from Disk, Form Trigger, Webhook) and set **Input Binary Field** to the field holding it, usually `data`. A Form Trigger names the field after the form field's label.
+- **File URL**: the node downloads the file from a public HTTP or HTTPS URL itself. The download is sent without your SharpAPI key.
+
+Every node also sets `usableAsTool`, so an AI Agent can call it mid-conversation. n8n hands a tool only the arguments the model chose, never the files in the conversation, so use **File URL** as the input type when you attach a node as a tool, and let the model fill it in: click the sparkle icon next to **File URL**, or set it to `{{ $fromAI('fileUrl', 'URL of the document to process', 'string') }}`. Try it with [this sample invoice](https://raw.githubusercontent.com/sharpapi/n8n-nodes-sharpapi/main/examples/sample-invoice.pdf).
 
 ## Nodes
 
@@ -89,7 +92,7 @@ Accepted file formats: DOC, DOCX, TXT, RTF, PDF, JPG, JPEG, JPE, PNG, TIFF, TIF,
 - Feed a recruitment inbox straight into an ATS or Google Sheet
 - Bulk-normalise a legacy CV archive sitting in Google Drive or S3
 - Enrich inbound applications before they reach a human recruiter
-- Let an AI agent read an attached CV mid-conversation
+- Let an AI agent read a CV from a link mid-conversation
 
 | Option | Default | Notes |
 | --- | --- | --- |

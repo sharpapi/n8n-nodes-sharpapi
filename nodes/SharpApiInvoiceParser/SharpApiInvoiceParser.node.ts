@@ -7,7 +7,12 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
 
-import { sharpApiPoll, sharpApiUpload, toNodeError } from '../shared/GenericFunctions';
+import {
+	FILE_INPUT_PROPERTIES,
+	sharpApiPoll,
+	sharpApiUpload,
+	toNodeError,
+} from '../shared/GenericFunctions';
 
 const ENDPOINT = '/finance/parse_invoice';
 
@@ -18,7 +23,7 @@ export class SharpApiInvoiceParser implements INodeType {
 		icon: { light: 'file:invoice-parser.svg', dark: 'file:invoice-parser.dark.svg' },
 		group: ['transform'],
 		version: 1,
-		subtitle: '={{$parameter["binaryPropertyName"]}}',
+		subtitle: '={{$parameter["inputType"] === "url" ? "From URL" : "From binary field"}}',
 		description: 'Extract structured data from invoices and delivery orders with AI OCR, powered by SharpAPI',
 		usableAsTool: true,
 		defaults: {
@@ -33,14 +38,7 @@ export class SharpApiInvoiceParser implements INodeType {
 			},
 		],
 		properties: [
-				{
-					displayName: 'Input Data Field Name',
-					name: 'binaryPropertyName',
-					type: 'string',
-					default: 'data',
-					required: true,
-					description: 'Name of the field in the input item that contains the file to send to SharpAPI'
-				},
+				...FILE_INPUT_PROPERTIES,
 				{
 					displayName: 'Options',
 					name: 'options',
@@ -86,7 +84,6 @@ export class SharpApiInvoiceParser implements INodeType {
 
 		for (let i = 0; i < items.length; i++) {
 			try {
-				const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
 				const options = this.getNodeParameter('options', i, {}) as IDataObject;
 				const simplify = options.simplify !== false;
 				const pollInterval = (options.pollInterval as number) ?? 5;
@@ -98,7 +95,6 @@ export class SharpApiInvoiceParser implements INodeType {
 					this,
 					ENDPOINT,
 					i,
-					binaryPropertyName,
 					fields,
 				);
 

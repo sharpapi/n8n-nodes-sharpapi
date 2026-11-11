@@ -30,10 +30,14 @@ export interface MockOptions {
 	/** Binary payload returned by assertBinaryData / getBinaryDataBuffer. */
 	binary?: { mimeType?: string; fileName?: string; contents?: string } | null;
 	credentials?: IDataObject;
+	/** Replies to unauthenticated downloads (File URL input), in order. An Error rejects. */
+	downloads?: unknown[];
 }
 
 export interface MockContext {
 	calls: HttpCall[];
+	/** Unauthenticated requests, i.e. File URL downloads. */
+	downloadCalls: HttpCall[];
 	getInputData: () => Array<{ json: IDataObject }>;
 	getNodeParameter: (name: string, index: number, fallback?: unknown) => unknown;
 	getNode: () => { name: string; type: string; typeVersion: number };
@@ -41,6 +45,7 @@ export interface MockContext {
 	continueOnFail: () => boolean;
 	helpers: {
 		httpRequestWithAuthentication: (credentialsName: string, options: HttpCall) => Promise<unknown>;
+		httpRequest: (options: HttpCall) => Promise<unknown>;
 		assertBinaryData: (index: number, property: string) => IDataObject;
 		getBinaryDataBuffer: (index: number, property: string) => Promise<Buffer>;
 	};
@@ -54,13 +59,18 @@ export function createMockExecuteFunctions(options: MockOptions = {}): MockConte
 		continueOnFail = false,
 		binary = { mimeType: 'application/pdf', fileName: 'cv.pdf', contents: '%PDF-1.4 test' },
 		credentials = { apiKey: 'test-key', baseUrl: 'https://sharpapi.com/api/v1' },
+		downloads = [],
 	} = options;
+
+	const downloadCalls: HttpCall[] = [];
+	const downloadQueue = [...downloads];
 
 	const calls: HttpCall[] = [];
 	const queue = [...responses];
 
 	const context: MockContext = {
 		calls,
+		downloadCalls,
 
 		getInputData: () => items,
 
@@ -74,6 +84,14 @@ export function createMockExecuteFunctions(options: MockOptions = {}): MockConte
 		continueOnFail: () => continueOnFail,
 
 		helpers: {
+			httpRequest: async (httpOptions: HttpCall) => {
+				downloadCalls.push(httpOptions);
+				const value = downloadQueue.shift();
+				if (value === undefined) throw new Error(`Unexpected download of ${String(httpOptions.url)}`);
+				if (value instanceof Error) throw value;
+				return value;
+			},
+
 			httpRequestWithAuthentication: async (_credentialsName: string, httpOptions: HttpCall) => {
 				calls.push(httpOptions);
 
@@ -144,6 +162,11 @@ export function rateLimited(retryAfter?: number) {
 		headers: retryAfter === undefined ? {} : { 'retry-after': retryAfter },
 		body: { message: 'Too Many Attempts.' },
 	};
+}
+
+/** A successful File URL download, as httpRequest returns it with returnFullResponse. */
+export function downloaded(contents: string, contentType = 'application/pdf') {
+	return { statusCode: 200, headers: { 'content-type': contentType }, body: Buffer.from(contents) };
 }
 
 /** Any other non-2xx status, which should abort the poll. */

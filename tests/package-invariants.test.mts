@@ -145,7 +145,7 @@ describe('package', () => {
 	it('ships an example workflow per node in the repo, linked from the README', () => {
 		// n8n verification asks for example workflows in the docs.
 		const readme = readFileSync(join(PKG_DIR, 'README.md'), 'utf8');
-		const examples = readdirSync(join(PKG_DIR, 'examples'));
+		const examples = readdirSync(join(PKG_DIR, 'examples')).filter((file) => file.endsWith('.json'));
 
 		expect(examples).toHaveLength(nodeClasses.length);
 		for (const example of examples) {
