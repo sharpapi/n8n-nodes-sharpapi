@@ -39,8 +39,9 @@ jobs:
 
       - name: Release
         working-directory: ${{ steps.pkg.outputs.dir }}
+        # Not `npm config set`: inside a workspace it fails with ENOWORKSPACES.
         run: |
-          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          if [ -n "$NPM_TOKEN" ]; then echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc; fi
           npm run release
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
