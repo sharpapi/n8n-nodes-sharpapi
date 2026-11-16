@@ -1,0 +1,10 @@
+{
+  "git": {
+    "tagName": "invoice-parser-v${version}",
+    "tagMatch": "invoice-parser-v*",
+    "commitMessage": "Release invoice-parser ${version}"
+  },
+  "github": {
+    "releaseName": "invoice-parser ${version}"
+  }
+}

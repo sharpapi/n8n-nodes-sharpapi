@@ -1,0 +1,10 @@
+{
+  "git": {
+    "tagName": "resume-job-match-score-v${version}",
+    "tagMatch": "resume-job-match-score-v*",
+    "commitMessage": "Release resume-job-match-score ${version}"
+  },
+  "github": {
+    "releaseName": "resume-job-match-score ${version}"
+  }
+}

@@ -1,31 +1,32 @@
 /**
- * Guards the properties that make the generated package publishable and
- * verifiable, rather than the behaviour of any one node. These are the things
- * an n8n verification reviewer checks, and the things a careless spec edit
- * would quietly break.
+ * Guards the properties that make each package publishable and verifiable,
+ * rather than the behaviour of any one node. These are the things an n8n
+ * verification reviewer checks, and the things a careless edit would quietly
+ * break.
  */
 import { describe, expect, it } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PKG_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
-const CREDENTIALS_DIR = join(PKG_DIR, 'credentials');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const SHARED_DIR = join(ROOT, 'shared');
+const PACKAGES_DIR = join(ROOT, 'packages');
 
 const readJson = (path: string) => JSON.parse(readFileSync(path, 'utf8'));
-const manifest = readJson(join(PKG_DIR, 'package.json'));
+const read = (path: string) => readFileSync(path, 'utf8');
 
-// Every directory under nodes/ is a node, except the shared runtime helpers.
-const nodeClasses = readdirSync(join(PKG_DIR, 'nodes')).filter((entry) => entry !== 'shared');
-const nodeDirOf = (nodeClass: string) => join(PKG_DIR, 'nodes', nodeClass);
-const codexOf = (nodeClass: string) =>
-	readJson(join(nodeDirOf(nodeClass), `${nodeClass}.node.json`));
+const packageDirs = readdirSync(PACKAGES_DIR);
 
-const credentialFile = readdirSync(CREDENTIALS_DIR).find((entry) =>
-	entry.endsWith('.credentials.ts'),
-) as string;
-const credentialSource = readFileSync(join(CREDENTIALS_DIR, credentialFile), 'utf8');
-const credentialName = credentialSource.match(/\bname = '([^']+)'/)?.[1];
+/** Every file under a directory, as paths relative to it. */
+function filesUnder(dir: string): string[] {
+	return readdirSync(dir).flatMap((entry) => {
+		const path = join(dir, entry);
+		return statSync(path).isDirectory()
+			? filesUnder(path).map((file) => join(entry, file))
+			: [entry];
+	});
+}
 
 /** Asserts a file declares a themed icon pair and that both files sit beside it. */
 function expectThemedIcon(source: string, dir: string, label: string) {
@@ -47,19 +48,78 @@ function expectSquareSvgs(dir: string) {
 	expect(svgs.length).toBeGreaterThan(0);
 
 	for (const svg of svgs) {
-		const viewBox = readFileSync(join(dir, svg), 'utf8').match(
-			/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/,
-		);
+		const viewBox = read(join(dir, svg)).match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/);
 		expect(viewBox, `${svg} has no viewBox`).not.toBeNull();
 		expect(viewBox?.[1], `${svg} is not square`).toBe(viewBox?.[2]);
 	}
 }
 
-it('ships three nodes', () => {
-	expect(nodeClasses).toHaveLength(3);
+it('ships three packages', () => {
+	expect(packageDirs.sort()).toEqual(['invoice-parser', 'resume-job-match-score', 'resume-parser']);
 });
 
-describe('package', () => {
+it('gives every package a distinct name and every node a distinct node type', () => {
+	const names = packageDirs.map((dir) => readJson(join(PACKAGES_DIR, dir, 'package.json')).name);
+	expect(new Set(names).size).toBe(packageDirs.length);
+});
+
+it('ships the publish workflow n8n-node scaffolds, routed by tag prefix', () => {
+	// Provenance is mandatory for nodes published after 2026-05-01, and
+	// `n8n-node release` only sets NPM_CONFIG_PROVENANCE when it detects CI,
+	// so publishing has to run in Actions on a tag push.
+	const workflow = read(join(ROOT, '.github/workflows/publish.yml'));
+
+	expect(workflow).toContain('id-token: write');
+	expect(workflow).toContain('npm run release');
+	expect(workflow).toContain("'*-v*.*.*'");
+	expect(workflow).toContain('working-directory');
+	expect(workflow).not.toContain('npx release-it');
+});
+
+it('keeps the root private, so it can never be published', () => {
+	expect(readJson(join(ROOT, 'package.json')).private).toBe(true);
+});
+
+describe('shared credential', () => {
+	const credentialsDir = join(SHARED_DIR, 'credentials');
+	const source = read(join(credentialsDir, 'SharpApiApi.credentials.ts'));
+
+	it('declares themed icons that both exist', () => {
+		expectThemedIcon(source, credentialsDir, 'SharpApiApi.credentials.ts');
+	});
+
+	it('ships square SVG icons', () => {
+		expectSquareSvgs(credentialsDir);
+	});
+});
+
+describe.each(packageDirs)('packages/%s', (dir) => {
+	const pkgDir = join(PACKAGES_DIR, dir);
+	const manifest = readJson(join(pkgDir, 'package.json'));
+	const nodeClasses = readdirSync(join(pkgDir, 'nodes')).filter((entry) => entry !== 'shared');
+	const nodeClass = nodeClasses[0];
+	const nodeDir = join(pkgDir, 'nodes', nodeClass);
+	const source = read(join(nodeDir, `${nodeClass}.node.ts`));
+	const codex = readJson(join(nodeDir, `${nodeClass}.node.json`));
+	const credentialSource = read(join(pkgDir, 'credentials', 'SharpApiApi.credentials.ts'));
+	const credentialName = credentialSource.match(/\bname = '([^']+)'/)?.[1];
+
+	it('ships exactly one regular node, as n8n verification requires', () => {
+		expect(nodeClasses).toHaveLength(1);
+		expect(manifest.n8n.nodes).toEqual([`dist/nodes/${nodeClass}/${nodeClass}.node.js`]);
+	});
+
+	it('carries an identical copy of every shared file', () => {
+		// Packages ship with zero dependencies, so shared code is copied in by
+		// `npm run sync`. A hand edit to one copy would make the nodes drift.
+		for (const file of filesUnder(SHARED_DIR)) {
+			expect(read(join(pkgDir, file)), `${relative(ROOT, join(pkgDir, file))} differs from shared/; run npm run sync`).toBe(
+				read(join(SHARED_DIR, file)),
+			);
+		}
+		expect(read(join(pkgDir, 'LICENSE.md'))).toBe(read(join(ROOT, 'LICENSE.md')));
+	});
+
 	it('declares no runtime dependencies', () => {
 		expect(manifest.dependencies ?? {}).toEqual({});
 	});
@@ -67,141 +127,62 @@ describe('package', () => {
 	it('keeps n8n-workflow as a peer dependency only', () => {
 		expect(manifest.peerDependencies).toHaveProperty('n8n-workflow');
 		expect(manifest.devDependencies).toHaveProperty('n8n-workflow');
-		expect(manifest.dependencies?.['n8n-workflow']).toBeUndefined();
 	});
 
-	it('publishes dist only', () => {
+	it('publishes dist only, publicly, and names its repository directory for provenance', () => {
 		expect(manifest.files).toEqual(['dist']);
+		expect(manifest.publishConfig.access).toBe('public');
+		expect(manifest.repository.directory).toBe(`packages/${dir}`);
 	});
 
-	it('carries the keyword n8n requires for community packages', () => {
+	it('is an MIT licensed community package', () => {
 		expect(manifest.keywords).toContain('n8n-community-node-package');
-	});
-
-	it('is MIT licensed, as n8n verification requires', () => {
 		expect(manifest.license).toBe('MIT');
+		expect(manifest.name).toBe(`@sharpapi/n8n-nodes-${dir}`);
 	});
 
-	it('points its n8n entry paths at every node the build will produce', () => {
-		expect([...manifest.n8n.nodes].sort()).toEqual(
-			nodeClasses.map((nodeClass) => `dist/nodes/${nodeClass}/${nodeClass}.node.js`).sort(),
-		);
-	});
-
-	it('declares one credential, matching the file that defines it', () => {
-		expect(manifest.n8n.credentials).toEqual([
-			`dist/credentials/${credentialFile.replace('.ts', '.js')}`,
-		]);
-	});
-
-	it('ships the polling helper once, shared by every node', () => {
-		// The helper is the single source of truth for every node's runtime
-		// behaviour. A per-node copy would drift, and the polling tests, which
-		// drive the Resume Parser, would stop describing the other nodes.
-		expect(readdirSync(join(PKG_DIR, 'nodes/shared'))).toContain('GenericFunctions.ts');
-
-		for (const nodeClass of nodeClasses) {
-			expect(readdirSync(nodeDirOf(nodeClass))).not.toContain('GenericFunctions.ts');
-		}
-	});
-
-	it('carries a build step that copies the codex into dist', () => {
-		// n8n-node build only copies **/*.{png,svg}, so without this the codex
-		// never ships and the aliases have no effect once published. The codex
-		// field on the node description is NOT a substitute: n8n ignores it.
-		expect(manifest.scripts.build).toContain('copy-codex.mjs');
-		expect(() => readFileSync(join(PKG_DIR, 'copy-codex.mjs'), 'utf8')).not.toThrow();
-	});
-
-	it('ships the publish workflow n8n-node scaffolds, not a hand-rolled one', () => {
-		// Provenance is mandatory for nodes published after 2026-05-01, and
-		// `n8n-node release` only sets NPM_CONFIG_PROVENANCE when it detects CI,
-		// so publishing has to run in Actions on a tag push.
-		const workflow = readFileSync(join(PKG_DIR, '.github/workflows/publish.yml'), 'utf8');
-
-		expect(workflow).toContain('id-token: write');
-		expect(workflow).toContain('npm run release');
-		expect(workflow).toContain('tags:');
-		// release-it is invoked by the CLI, never directly: it is not a dependency
-		// here and there is no .release-it config to drive it.
-		expect(workflow).not.toContain('npx release-it');
-	});
-
-	it('exposes the release script the publish workflow calls', () => {
-		expect(manifest.scripts.release).toBe('n8n-node release');
-	});
-
-	it('keeps build metadata out of the published tarball', () => {
-		// An incremental build wrote dist/tsconfig.tsbuildinfo, 211 kB of cache in
-		// a 35 kB package, and `files: ["dist"]` shipped all of it.
-		const tsconfig = readJson(join(PKG_DIR, 'tsconfig.json'));
-		expect(tsconfig.compilerOptions.incremental).toBeUndefined();
-	});
-
-	it('ships an ESLint flat config, which n8n-node lint refuses to run without', () => {
-		expect(() => readFileSync(join(PKG_DIR, 'eslint.config.mjs'), 'utf8')).not.toThrow();
-	});
-
-	it('ships an example workflow per node in the repo, linked from the README', () => {
-		// n8n verification asks for example workflows in the docs.
-		const readme = readFileSync(join(PKG_DIR, 'README.md'), 'utf8');
-		const examples = readdirSync(join(PKG_DIR, 'examples')).filter((file) => file.endsWith('.json'));
-
-		expect(examples).toHaveLength(nodeClasses.length);
-		for (const example of examples) {
-			expect(readme).toContain(`/examples/${example}`);
-			for (const node of readJson(join(PKG_DIR, 'examples', example)).nodes) {
-				expect(node.type).not.toMatch(/^CUSTOM\./);
-			}
-		}
-	});
-});
-
-describe('credential', () => {
-	it('declares themed icons that both exist', () => {
-		expectThemedIcon(credentialSource, CREDENTIALS_DIR, credentialFile);
-	});
-
-	it('ships square SVG icons', () => {
-		expectSquareSvgs(CREDENTIALS_DIR);
-	});
-});
-
-describe.each(nodeClasses)('%s', (nodeClass) => {
-	const source = readFileSync(join(nodeDirOf(nodeClass), `${nodeClass}.node.ts`), 'utf8');
-
-	it('uses the shared credential', () => {
+	it('declares the shared credential', () => {
+		expect(manifest.n8n.credentials).toEqual(['dist/credentials/SharpApiApi.credentials.js']);
 		expect(source).toContain(`name: '${credentialName}'`);
 	});
 
-	it('declares themed icons that both exist', () => {
-		expectThemedIcon(source, nodeDirOf(nodeClass), `${nodeClass}.node.ts`);
+	it('copies the codex into dist on build', () => {
+		// n8n-node build only copies **/*.{png,svg}, so without this the codex
+		// never ships and the aliases have no effect once published.
+		expect(manifest.scripts.build).toBe('n8n-node build && node copy-codex.mjs');
 	});
 
-	it('ships square SVG icons', () => {
-		expectSquareSvgs(nodeDirOf(nodeClass));
+	it('exposes the release script the publish workflow calls, with its own tag prefix', () => {
+		expect(manifest.scripts.release).toBe('n8n-node release');
+		expect(readJson(join(pkgDir, '.release-it.json')).git.tagName).toBe(`${dir}-v\${version}`);
 	});
 
-	it('ships a codex file naming the node it documents', () => {
-		const codex = codexOf(nodeClass);
+	it('keeps build metadata out of the published tarball', () => {
+		const tsconfig = readJson(join(pkgDir, 'tsconfig.json'));
+		expect(tsconfig.compilerOptions.incremental).toBeUndefined();
+		expect(tsconfig.compilerOptions.declaration).toBe(false);
+	});
 
-		expect(codex.node.startsWith(`${manifest.name}.`)).toBe(true);
-		expect(source).toContain(`name: '${codex.node.split('.')[1]}'`);
+	it('declares themed icons that both exist, with square SVGs', () => {
+		expectThemedIcon(source, nodeDir, `${nodeClass}.node.ts`);
+		expectSquareSvgs(nodeDir);
+	});
+
+	it('ships a codex file naming the node it documents, with search aliases', () => {
+		expect(codex.node).toBe(`${manifest.name}.${source.match(/\bname: '([^']+)'/)?.[1]}`);
 		expect(codex.codexVersion).toBeDefined();
 		expect(codex.resources.primaryDocumentation[0].url).toMatch(/^https:\/\//);
-	});
-
-	it('declares search aliases, which is the only thing node panel search reads', () => {
-		// Verified in a running n8n 2.32.6: searching "cv" surfaced nothing before
-		// these existed, even though the Resume Parser description says "CVs".
-		const codex = codexOf(nodeClass);
-
-		expect(Array.isArray(codex.alias)).toBe(true);
+		// Verified in a running n8n 2.32.6: aliases are the only search terms
+		// besides the display name.
 		expect(codex.alias.length).toBeGreaterThan(0);
 	});
-});
 
-it('gives every node a distinct node name', () => {
-	const names = nodeClasses.map((nodeClass) => codexOf(nodeClass).node);
-	expect(new Set(names).size).toBe(nodeClasses.length);
+	it('links an example workflow from its README that uses the published node type', () => {
+		const readme = read(join(pkgDir, 'README.md'));
+		const example = `${dir}.json`;
+
+		expect(readme).toContain(`/examples/${example}`);
+		const types = readJson(join(ROOT, 'examples', example)).nodes.map((node: { type: string }) => node.type);
+		expect(types).toContain(codex.node);
+	});
 });

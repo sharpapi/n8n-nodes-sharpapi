@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
-import { SharpApiResumeParser } from '../nodes/SharpApiResumeParser/SharpApiResumeParser.node';
-import { SharpApiResumeJobMatchScore } from '../nodes/SharpApiResumeJobMatchScore/SharpApiResumeJobMatchScore.node';
-import { SharpApiInvoiceParser } from '../nodes/SharpApiInvoiceParser/SharpApiInvoiceParser.node';
+import { SharpApiResumeParser } from '../packages/resume-parser/nodes/SharpApiResumeParser/SharpApiResumeParser.node';
+import { SharpApiResumeJobMatchScore } from '../packages/resume-job-match-score/nodes/SharpApiResumeJobMatchScore/SharpApiResumeJobMatchScore.node';
+import { SharpApiInvoiceParser } from '../packages/invoice-parser/nodes/SharpApiInvoiceParser/SharpApiInvoiceParser.node';
 
 import {
 	createMockExecuteFunctions,

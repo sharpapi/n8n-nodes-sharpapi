@@ -1,9 +1,11 @@
 name: Publish
 
+# One workflow for every package. A tag names its package by prefix:
+# resume-parser-v1.2.3 publishes packages/resume-parser.
 on:
   push:
     tags:
-      - '*.*.*'
+      - '*-v*.*.*'
 
 jobs:
   publish:
@@ -17,6 +19,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Resolve package from tag
+        id: pkg
+        run: |
+          dir="packages/${GITHUB_REF_NAME%-v*}"
+          [ -f "$dir/package.json" ] || { echo "No package for tag $GITHUB_REF_NAME"; exit 1; }
+          [ "$(node -p "require('./$dir/package.json').version")" = "${GITHUB_REF_NAME##*-v}" ] \
+            || { echo "Tag $GITHUB_REF_NAME does not match the version in $dir/package.json"; exit 1; }
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,6 +38,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Release
+        working-directory: ${{ steps.pkg.outputs.dir }}
         run: |
           [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
           npm run release

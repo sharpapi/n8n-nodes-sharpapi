@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 
-import { SharpApiInvoiceParser } from '../nodes/SharpApiInvoiceParser/SharpApiInvoiceParser.node';
+import { SharpApiInvoiceParser } from '../packages/invoice-parser/nodes/SharpApiInvoiceParser/SharpApiInvoiceParser.node';
 
 import {
 	createMockExecuteFunctions,

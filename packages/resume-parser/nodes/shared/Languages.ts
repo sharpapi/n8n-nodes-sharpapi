@@ -1,0 +1,45 @@
+import type { INodePropertyOptions } from 'n8n-workflow';
+
+/**
+ * Languages accepted by SharpAPI's `language` parameter. The API takes the
+ * plain English language name, so extending this list is a one-line change.
+ */
+export const LANGUAGE_OPTIONS: INodePropertyOptions[] = [
+	{ name: 'Arabic', value: 'Arabic' },
+	{ name: 'Bulgarian', value: 'Bulgarian' },
+	{ name: 'Chinese', value: 'Chinese' },
+	{ name: 'Croatian', value: 'Croatian' },
+	{ name: 'Czech', value: 'Czech' },
+	{ name: 'Danish', value: 'Danish' },
+	{ name: 'Dutch', value: 'Dutch' },
+	{ name: 'English', value: 'English' },
+	{ name: 'Estonian', value: 'Estonian' },
+	{ name: 'Finnish', value: 'Finnish' },
+	{ name: 'French', value: 'French' },
+	{ name: 'German', value: 'German' },
+	{ name: 'Greek', value: 'Greek' },
+	{ name: 'Hebrew', value: 'Hebrew' },
+	{ name: 'Hindi', value: 'Hindi' },
+	{ name: 'Hungarian', value: 'Hungarian' },
+	{ name: 'Indonesian', value: 'Indonesian' },
+	{ name: 'Italian', value: 'Italian' },
+	{ name: 'Japanese', value: 'Japanese' },
+	{ name: 'Korean', value: 'Korean' },
+	{ name: 'Latvian', value: 'Latvian' },
+	{ name: 'Lithuanian', value: 'Lithuanian' },
+	{ name: 'Malay', value: 'Malay' },
+	{ name: 'Norwegian', value: 'Norwegian' },
+	{ name: 'Polish', value: 'Polish' },
+	{ name: 'Portuguese', value: 'Portuguese' },
+	{ name: 'Romanian', value: 'Romanian' },
+	{ name: 'Russian', value: 'Russian' },
+	{ name: 'Serbian', value: 'Serbian' },
+	{ name: 'Slovak', value: 'Slovak' },
+	{ name: 'Slovenian', value: 'Slovenian' },
+	{ name: 'Spanish', value: 'Spanish' },
+	{ name: 'Swedish', value: 'Swedish' },
+	{ name: 'Thai', value: 'Thai' },
+	{ name: 'Turkish', value: 'Turkish' },
+	{ name: 'Ukrainian', value: 'Ukrainian' },
+	{ name: 'Vietnamese', value: 'Vietnamese' },
+];

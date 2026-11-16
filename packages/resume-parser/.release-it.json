@@ -1,0 +1,10 @@
+{
+  "git": {
+    "tagName": "resume-parser-v${version}",
+    "tagMatch": "resume-parser-v*",
+    "commitMessage": "Release resume-parser ${version}"
+  },
+  "github": {
+    "releaseName": "resume-parser ${version}"
+  }
+}

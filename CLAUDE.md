@@ -1,47 +1,68 @@
-# @sharpapi/n8n-nodes-sharpapi
+# SharpAPI n8n community nodes
 
-The SharpAPI n8n community node package: one npm package, one node per SharpAPI
-endpoint, one shared credential, `sharpApiApi` ("SharpAPI API"). The repo root
-**is** the package. Only `dist/`, `package.json`, `README.md`, `LICENSE.md` and
-`index.js` reach npm (`files: ["dist"]`); tests and examples stay in the repo.
+A monorepo of three npm packages, one regular node each, all using one
+credential, `sharpApiApi` ("SharpAPI API"):
+
+| Directory | Package | Node |
+| --- | --- | --- |
+| `packages/invoice-parser` | `@sharpapi/n8n-nodes-invoice-parser` | `sharpApiInvoiceParser` |
+| `packages/resume-job-match-score` | `@sharpapi/n8n-nodes-resume-job-match-score` | `sharpApiResumeJobMatchScore` |
+| `packages/resume-parser` | `@sharpapi/n8n-nodes-resume-parser` | `sharpApiResumeParser` |
+
+The root is private (npm workspaces) and is never published. From each
+package only `dist/`, `package.json`, `README.md`, `CHANGELOG.md`,
+`LICENSE.md` and `index.js` reach npm (`files: ["dist"]`); tests and examples
+stay at the root.
 
 ---
 
-## Where things stand — 2026-11-11
+## Where things stand — 2026-11-16
 
-Published once as the unscoped `n8n-nodes-sharpapi@1.0.1` (2026-11-02, with
-provenance, maintainer `makowskid`), then renamed to
-`@sharpapi/n8n-nodes-sharpapi`, published as 1.0.2 and 1.0.3 (`latest`). The
-working tree adds the File URL input type for AI Agent tool use, unreleased.
-The repo is
-`github.com/sharpapi/n8n-nodes-sharpapi` (public); CI is green on Ubuntu.
+**Why three packages.** n8n's manual review of `@sharpapi/n8n-nodes-sharpapi`
+(1.0.4, all three nodes in one package) failed with "[HIGH] Multiple regular
+nodes in a single package": n8n allows one regular node per package, plus a
+trigger. The reviewer suggested one node with resources and operations; we
+split into one package per node instead. Precedent: alephant
+(`@alephantai/n8n-nodes-alephant-ai` / `-analytics`) and Mallabe split one
+vendor across verified packages.
+
+`@sharpapi/n8n-nodes-sharpapi` (1.0.4, `latest`) stays on npm and is **not**
+deprecated, by decision. Its history is the root `CHANGELOG.md`. The unscoped
+`n8n-nodes-sharpapi@1.0.1` also still exists.
+
+The three new packages are at 1.0.0 in `package.json`, unpublished.
 
 | Gate | State |
 | --- | --- |
-| `npm run typecheck` | pass |
-| `npm test` | 81 passing, ~2s, no network |
-| `npm run lint` | **0 errors, 0 warnings** |
-| `npm run build` | pass |
-| `npm pack --dry-run` | 22 files, ~41 kB unpacked |
-| `npm run dev` (Node 24) | n8n 2.45.7 starts with the package linked |
+| `npm run typecheck` | pass, all three |
+| `npm test` | 93 passing, ~2.5s, no network |
+| `npm run lint` | **0 errors, 0 warnings**, all three |
+| `npm run build` | pass, all three |
+| `npm pack --dry-run` | 13 files, ~36 kB unpacked each (plus README, CHANGELOG once committed) |
 
-Verified by hand on n8n 2.32.6, back when each node shipped as its own package
-with the same node code: nodes appear in the panel and are findable by
-"resume", "invoice", "cv" and "curriculum"; icons render on both themes;
-credential **Test** succeeds with a valid key and fails clearly with an invalid
-one; `Read/Write Files from Disk` → node returns structured JSON; all three are
-offered as AI Agent tools. Repeat once against this package.
+**One credential across three packages, verified on n8n 2.45.7** with all
+three tarballs installed in `~/.n8n/nodes` as a real community install: each
+package loads; `/types/credentials.json` lists `sharpApiApi` three times, but
+the editor keys credential types by name, so the user sees one; a single saved
+credential saves in a workflow with all three nodes, and a CLI execution ran
+all three end to end against a local fake SharpAPI with the key sent to
+SharpAPI and not to the file download. n8n keeps the *last-loaded* package's
+`supportedNodes` for the credential, which only matters to credentials with
+`restrictToSupportedNodes` (ours has none) or without a `test` (ours has one).
 
 ### Next
 
-1. Release 1.0.4 (File URL input), then record the n8n verification video
-   against exactly that version: install from npm, credential test, the main
-   actions, and one node used as an AI Agent tool with a File URL.
-2. If not done yet: move to a trusted publisher and delete the `NPM_TOKEN`
-   secret; see *Releasing*.
-3. Retire the unscoped `n8n-nodes-sharpapi`: deprecate it pointing at the
-   scoped name, or unpublish it, which npm allows only within 72 hours of
-   creation (until 2026-11-05 14:50 UTC) and which frees the name for anyone.
+1. Commit, push, then first publish of each package: push the tags
+   `invoice-parser-v1.0.0`, `resume-job-match-score-v1.0.0`,
+   `resume-parser-v1.0.0` by hand (no `npm run release`, which would bump past
+   1.0.0). `publish.yml` publishes the version in `package.json`, and needs
+   the `NPM_TOKEN` secret for these, as new packages.
+2. Configure a trusted publisher on each of the three packages, then delete
+   the secret; see *Releasing*.
+3. Answer the reviewer and submit the three packages in the n8n portal.
+4. Record the verification video against the published versions: install from
+   npm, credential test, the main actions, and one node as an AI Agent tool
+   with a File URL.
 
 ### Open n8n UX guideline items
 
@@ -80,26 +101,46 @@ terminal, a log or a commit.
 
 ## Workflow
 
+At the root, every script fans out to all three packages:
+
 ```bash
 npm run setup       # npm install --ignore-scripts, see below
-npm run typecheck   # tsc --noEmit over nodes/ and credentials/
-npm test            # vitest, ~2s, no network
-npm run lint        # n8n-node lint, must stay completely empty
-npm run build       # n8n-node build, then copy-codex.mjs
-npm run dev         # Node 24: local n8n with the package linked, rebuilds on change
+npm run sync        # copy shared/ and LICENSE.md into every package
+npm run typecheck   # tsc --noEmit, per package
+npm test            # vitest over all packages, ~2.5s, no network
+npm run lint        # n8n-node lint, per package, must stay completely empty
+npm run build       # n8n-node build, then copy-codex.mjs, per package
 ```
+
+Inside `packages/<dir>/`, `npm run dev` (Node 24) starts a local n8n with that
+package linked, and `npm run release` releases it.
 
 ## Layout
 
 ```
-nodes/shared/              GenericFunctions, Languages, Config: shared by every node
-nodes/<NodeClass>/         one node: .node.ts, .node.json codex, icon pair
-credentials/               the one credential and its icon pair
-copy-codex.mjs             build step, see below
-.github/workflows/         publish.yml, the tag-triggered provenance publish
-tests/                     vitest suite, .mts on purpose, see below
-examples/                  workflows linked from the README, credentials stripped
+shared/                    the ONLY place to edit shared files; `npm run sync` copies it into each package
+  nodes/shared/            GenericFunctions, Languages, Config
+  credentials/             the one credential and its brand icon pair
+  copy-codex.mjs           build step, see below
+  eslint.config.mjs  tsconfig.json  index.js
+packages/<dir>/            one publishable package
+  nodes/<NodeClass>/       its node: .node.ts, .node.json codex, icon pair
+  nodes/shared/ credentials/ copy-codex.mjs ...   committed copies from shared/
+  package.json .release-it.json .auto-changelog README.md CHANGELOG.md
+scripts/sync-shared.mjs    the copy step
+.github/workflows/         ci.yml; publish.yml, tag-triggered, routes by tag prefix
+tests/                     vitest suite for all packages, .mts on purpose, see below
+examples/<dir>.json        one workflow per package, linked from its README
+CHANGELOG.md               history of @sharpapi/n8n-nodes-sharpapi, before the split
 ```
+
+**Why copies, not a shared package or symlinks.** A shared package would be a
+runtime dependency, which verification forbids. Symlinks break Windows
+checkouts and look odd to reviewers browsing GitHub. With committed copies each
+package directory is a complete, standalone n8n package, which is what
+`n8n-node lint` in strict mode and `no-credential-reuse` expect. The invariants
+test fails when a copy differs from `shared/`, and CI runs `npm run sync` and
+then `git diff --exit-code`.
 
 ## Icons
 
@@ -118,11 +159,11 @@ asserts squareness on every SVG beside a node or the credential.
 relative to the file declaring it, so each pair sits beside its declaration:
 
 ```
-nodes/SharpApiResumeParser/resume-parser.svg                  light theme
-nodes/SharpApiResumeParser/resume-parser.dark.svg             dark theme
-nodes/SharpApiInvoiceParser/invoice-parser.svg / .dark.svg
-nodes/SharpApiResumeJobMatchScore/resume-job-match-score.svg / .dark.svg
-credentials/sharpapi.svg / .dark.svg                          the SharpAPI brand
+packages/resume-parser/nodes/SharpApiResumeParser/resume-parser.svg       light theme
+packages/resume-parser/nodes/SharpApiResumeParser/resume-parser.dark.svg  dark theme
+packages/invoice-parser/nodes/SharpApiInvoiceParser/invoice-parser.svg / .dark.svg
+packages/resume-job-match-score/nodes/SharpApiResumeJobMatchScore/resume-job-match-score.svg / .dark.svg
+shared/credentials/sharpapi.svg / .dark.svg                               the SharpAPI brand
 ```
 
 The credential belongs to the service, not to a node, hence the brand icon.
@@ -173,8 +214,9 @@ enough; use a deep path for Docker rehearsals.
 pulls roughly 700 MB. Killing an install mid-flight leaves `node_modules/.bin`
 unlinked, so `npm run lint` fails with `n8n-node: command not found` even
 though everything looks installed. The next install layers on top and silently
-omits packages. Check `ls node_modules/.bin | wc -l` (43 when complete) before
-believing an install worked.
+omits packages. Check `ls node_modules/.bin | wc -l` (50 when complete) before
+believing an install worked. Everything hoists to the root `node_modules`;
+packages have none of their own.
 
 **`npm run dev` needs Node 24.** It runs `npx n8n@latest`, which refuses Node
 22 (`.nvmrc` says 24, so `nvm use`). If n8n then crashes with `Could not
@@ -200,9 +242,18 @@ in its display name. The `codex` field on the node description is **not** a
 substitute: the type accepts it and n8n ignores it. Verified on 2.32.6, where a
 term present only in an inline alias returned nothing.
 
-**Shared runtime code lives in `nodes/shared/`.** Every other directory under
-`nodes/` is a node; `copy-codex.mjs` and the invariants test both rely on that.
-Each node declares its own `ENDPOINT`.
+**Shared runtime code lives in `shared/nodes/shared/`**, and each package has a
+copy at `nodes/shared/`. Every other directory under a package's `nodes/` is
+its node; `copy-codex.mjs` and the invariants test both rely on that. Each node
+declares its own `ENDPOINT`. Editing a package's copy instead of `shared/` is
+undone by the next `npm run sync` and fails the tests until then.
+
+**All three packages define the same credential, `sharpApiApi`, on purpose.**
+It lets one saved key serve every SharpAPI node; see *Where things stand* for
+what was verified. Keep the credential identical everywhere (sync guarantees
+it), and never give it `restrictToSupportedNodes`: n8n keeps only the
+last-loaded package's `supportedNodes`, so the restriction would lock out the
+other two nodes.
 
 **Keep collection options alphabetical by display name.** n8n's lint rule
 requires it.
@@ -212,7 +263,7 @@ fails the community package scan's filename rule, and the incremental cache
 either ships as 211 kB of dead weight or, if relocated outside `dist`, survives
 `rm -rf dist` and makes the next build emit nothing at all.
 
-**Example workflows use the published node type,** `@sharpapi/n8n-nodes-sharpapi.<nodeName>`.
+**Example workflows use the published node type,** `@sharpapi/n8n-nodes-<dir>.<nodeName>`.
 A node loaded from a custom extensions directory registers as
 `CUSTOM.<nodeName>` instead, so an example built in a local n8n needs its type
 rewritten before it is committed. The Read file step points at a placeholder
@@ -248,15 +299,45 @@ provenance for community nodes since 2026-05-01.
 
 ```bash
 # on main, clean tree
+cd packages/resume-parser
 npm run release      # lints, builds, bumps, changelogs, commits, tags, pushes
 ```
 
+**Each package releases on its own, routed by tag prefix.** `.release-it.json`
+in each package sets `git.tagName` to `<dir>-v${version}` (and `tagMatch`, so
+`requireCommits` and the bump only look at that package's tags). `n8n-node
+release` passes no tag name on the command line, so the file wins.
+`publish.yml` triggers on `*-v*.*.*`, strips the suffix to find
+`packages/<dir>`, checks the tag matches that `package.json` version, and runs
+`npm run release` there, which in CI is lint, build, `npm publish` with
+provenance. The old bare tags (`1.0.0` … `1.0.4`) belong to
+`@sharpapi/n8n-nodes-sharpapi` and no longer trigger anything.
+
+**The local release asks questions.** release-it's `-n` here is not
+non-interactive, so expect prompts. Rehearsed in a scratch clone with a bare
+remote: the version bump touches only the package's `package.json` (the root
+lockfile stays valid for `npm ci`), and `CHANGELOG.md` is committed with it
+because it is already tracked. release-it stages with `git add . --update`,
+which skips untracked files, so never delete a package's `CHANGELOG.md`.
+
+**Changelogs are per package.** `.auto-changelog` sets `tagPrefix` and
+`tagPattern` to the package's prefix and `appendGitLog: "-- ."`, which limits
+the log to commits touching that package. Known cosmetic flaw: the newest
+heading's compare link points at the bare version (`1.0.2`), not
+`<dir>-v1.0.2`.
+
+**A brand-new package's first version is published by tagging by hand.**
+`npm run release` always bumps, so to publish the 1.0.0 already in
+`package.json`, push `git tag <dir>-v1.0.0` instead; CI publishes what
+`package.json` says.
+
 **First publish uses a token, later ones use OIDC.** An npm trusted publisher
 can only be configured on a package that already exists, so the first release
-needs an `NPM_TOKEN` repository secret (granular, read and write, bypass 2FA,
-short expiry). Then configure the trusted publisher (owner `sharpapi`, repo
-`n8n-nodes-sharpapi`, workflow `publish.yml`), delete the secret, revoke the
-token, and set *Require two-factor authentication and disallow tokens*.
+of each package needs an `NPM_TOKEN` repository secret (granular, read and
+write, bypass 2FA, short expiry). Then configure a trusted publisher on **each**
+package (owner `sharpapi`, repo `n8n-nodes-sharpapi`, workflow `publish.yml`;
+one workflow serves all three), delete the secret, revoke the token, and set
+*Require two-factor authentication and disallow tokens*.
 
 **Keep `publishConfig.access: public` in `package.json`.** The first publish
 (1.0.0, 2026-11-02) failed with `Can't generate provenance for new or private
@@ -286,16 +367,23 @@ attempt called `npx release-it` with no `release-it` dependency and no config.
 
 ## Adding an endpoint
 
-Copy a node folder under `nodes/` and rename the class, file names, `name`,
-icon files and `ENDPOINT`. Then:
+One endpoint is one new package: n8n verification allows one regular node per
+package. Copy a directory under `packages/` and, inside it, rename the node
+folder, class, file names, `name`, icon files and `ENDPOINT`. Then:
 
-1. Add `dist/nodes/<NodeClass>/<NodeClass>.node.js` to `n8n.nodes` in
-   `package.json`, and any new keywords.
-2. Update the codex `.node.json`: `node` is `@sharpapi/n8n-nodes-sharpapi.<nodeName>`,
+1. In its `package.json`: `name` (`@sharpapi/n8n-nodes-<dir>`), `version`
+   1.0.0, `description`, `keywords`, `repository.directory`, and the
+   `n8n.nodes` path.
+2. In `.release-it.json` and `.auto-changelog`: the `<dir>-v` prefix
+   everywhere. Reset `CHANGELOG.md` to the one-paragraph stub.
+3. Update the codex `.node.json`: `node` is `@sharpapi/n8n-nodes-<dir>.<nodeName>`,
    plus `categories` and `alias`, the only search terms besides the display name.
-3. Add a README section and an example workflow in `examples/`, linked from
-   the README.
-4. Bump the "ships three nodes" count in `tests/package-invariants.test.mts`.
+4. Write its README, add `examples/<dir>.json` and link it from that README.
+   List the package in the root README.
+5. Add the directory to the "ships three packages" list in
+   `tests/package-invariants.test.mts`, then `npm run setup` so the workspace
+   is linked.
+6. First publish: tag by hand, then a trusted publisher; see *Releasing*.
 
 Things to get right in the node itself:
 

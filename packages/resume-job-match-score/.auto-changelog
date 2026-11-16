@@ -1,0 +1,7 @@
+{
+  "tagPrefix": "resume-job-match-score-v",
+  "tagPattern": "^resume-job-match-score-v",
+  "appendGitLog": "-- .",
+  "commitLimit": false,
+  "hideCredit": true
+}

@@ -1,5 +1,5 @@
 {
-	"node": "@sharpapi/n8n-nodes-sharpapi.sharpApiResumeParser",
+	"node": "@sharpapi/n8n-nodes-resume-job-match-score.sharpApiResumeJobMatchScore",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [
@@ -9,10 +9,12 @@
 		"CV",
 		"Curriculum Vitae",
 		"Resume",
+		"Screening",
 		"Recruitment",
 		"ATS",
 		"HR",
 		"Candidate",
+		"Scoring",
 		"SharpAPI"
 	],
 	"resources": {

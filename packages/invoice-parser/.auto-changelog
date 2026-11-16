@@ -1,0 +1,7 @@
+{
+  "tagPrefix": "invoice-parser-v",
+  "tagPattern": "^invoice-parser-v",
+  "appendGitLog": "-- .",
+  "commitLimit": false,
+  "hideCredit": true
+}

@@ -1,0 +1,7 @@
+{
+  "tagPrefix": "resume-parser-v",
+  "tagPattern": "^resume-parser-v",
+  "appendGitLog": "-- .",
+  "commitLimit": false,
+  "hideCredit": true
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { NodeOperationError } from 'n8n-workflow';
 
-import { SharpApiResumeParser } from '../nodes/SharpApiResumeParser/SharpApiResumeParser.node';
+import { SharpApiResumeParser } from '../packages/resume-parser/nodes/SharpApiResumeParser/SharpApiResumeParser.node';
 
 import {
 	createMockExecuteFunctions,

@@ -1,19 +1,18 @@
 {
-	"node": "@sharpapi/n8n-nodes-sharpapi.sharpApiInvoiceParser",
+	"node": "@sharpapi/n8n-nodes-resume-parser.sharpApiResumeParser",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [
-		"Finance & Accounting"
+		"Productivity"
 	],
 	"alias": [
-		"Invoice",
-		"OCR",
-		"Receipt",
-		"Bill",
-		"Accounts Payable",
-		"Bookkeeping",
-		"Accounting",
-		"Document",
+		"CV",
+		"Curriculum Vitae",
+		"Resume",
+		"Recruitment",
+		"ATS",
+		"HR",
+		"Candidate",
 		"SharpAPI"
 	],
 	"resources": {
